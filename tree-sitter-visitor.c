@@ -76,7 +76,7 @@ void visit_tree (TSNode node, struct visit_context context) {
 
   if (DEBUG) {
     printf("Visiting node: %u\n", (unsigned int) node.id);
-    hashmap_scan(context.visitors, visitor_iter, NULL);
+    /* hashmap_scan(context.visitors, visitor_iter, NULL); */
   }
   const char * type = ts_node_type(node);
 

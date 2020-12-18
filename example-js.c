@@ -37,8 +37,8 @@ int main(int argc, char * argv[]) {
 
   TSNode root_node = ts_tree_root_node(tree);
 
-  struct visitor * iden = visitor_new("identifier", node_op);
-  hashmap_set(visitors, iden);
+  /* struct visitor * iden = visitor_new("identifier", node_op); */
+  /* hashmap_set(visitors, iden); */
 
   struct visit_context *context = context_new(source_code, visitors);
   visit_tree(root_node, context);
