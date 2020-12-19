@@ -149,7 +149,7 @@ int main(int argc, char * argv[]) {
   context_add_visitor(context, visitor_new("undefined", node_keyword));
   context_add_visitor(context, visitor_new("null", node_keyword));
   context_add_visitor(context, visitor_new("debugger", node_keyword));
-  context_add_visitor(context, visitor_new("continue", node_keyword));
+  context_add_visitor(context, visitor_new("continue", node_keyword_space));
   context_add_visitor(context, visitor_new("continue_statement_out", node_semi));
   context_add_visitor(context, visitor_new("throw", node_keyword_space));
   context_add_visitor(context, visitor_new("get", node_keyword));

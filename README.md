@@ -8,7 +8,7 @@ A hashmap implementation of the visitor pattern for tree-sitter.
 
 ## Usage
 
-Check example-js.c and run-js.sh 
+Check js minifier for how to use this
 
 ## API
 
