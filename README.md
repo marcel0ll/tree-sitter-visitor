@@ -10,6 +10,17 @@ A hashmap implementation of the visitor pattern for tree-sitter.
 
 Check js minifier for how to use this
 
+## TO DO
+
+- [ ] better API to register multiple types for the same function
+- [ ] can this be "imported" as an npm package, similar to 'tree-sitter'?
+- [ ] Can context be extensible? should it?
+- [ ] better AST context awareness while visiting a node (is this node inside X type of node?)
+
+- [ ] Diff file against a cached version(might even be a file stored in a SHA-1 git ref),
+used it as 'edits' regenerate just parts of the out file (not sure how to relate AST to generated file)...
+if for some reason you have to regenerate entire file to create mapping, ignore this
+
 ## API
 
 ```c
