@@ -8,10 +8,10 @@ This is a library created to test tree-sitter-visitor
 
 ## To improve
 
-[ ] Remove " " after anonymous function. ex.: `var a = function (){}`
-[ ] Remove " " after break. ex.: `break ;`
-[ ] Remove " " after continue. ex.: `continue ;`
-[ ] Transform scoped parameters identifiers in shorter versions. ex.: `function(foo){foo()}` => `function(a){a()}`
+- [ ] Remove " " after anonymous function. ex.: `var a = function (){}`
+- [ ] Remove " " after break. ex.: `break ;`
+- [ ] Remove " " after continue. ex.: `continue ;`
+- [ ] Transform scoped parameters identifiers in shorter versions. ex.: `function(foo){foo()}` => `function(a){a()}`
 
 ## How I tested this
 
