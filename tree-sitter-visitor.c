@@ -87,7 +87,7 @@ void visit_tree (TSNode node, struct visit_context * context) {
 
   if (DEBUG) {
     /* printf("Visiting node: %u\n", (unsigned int) node.id); */
-    /* printf("Visiting: %s\n", ts_node_type(node)); */
+    printf("Visiting: %s\n", ts_node_type(node));
   }
   const char * type = ts_node_type(node);
 
@@ -97,7 +97,7 @@ void visit_tree (TSNode node, struct visit_context * context) {
     visitor_fn(node, context);
   } else {
     if (DEBUG) {
-      printf("\nMissing: %s\n", ts_node_type(node));
+      /* printf("\nMissing: %s\n", ts_node_type(node)); */
     }
   }
 
@@ -105,6 +105,17 @@ void visit_tree (TSNode node, struct visit_context * context) {
   for (unsigned i = 0; i < child_count; i++) {
     TSNode child_node = ts_node_child(node, i);
     visit_tree(child_node, context);
+  }
+
+  char *type_out = malloc(strlen(type) + 5);
+  strcpy(type_out, type);
+  strcat(type_out, "_out");
+
+  struct visitor * visitor_out = hashmap_get(context->visitors, &(struct visitor){ .type=type_out});
+  if (visitor_out != NULL) {
+    void (*visitor_out_fn)() = visitor_out->visit; 
+    visitor_out_fn(node, context);
+    /* printf("Visiting: %s\n", type_out); */
   }
 }
 
