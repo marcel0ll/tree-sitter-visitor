@@ -12,7 +12,7 @@ Check js minifier for how to use this
 
 ## TO DO
 
-- [ ] better API to register multiple types for the same function
+- [x] better API to register multiple types for the same function
 - [ ] can this be "imported" as an npm package, similar to 'tree-sitter'?
 - [ ] Can context be extensible? should it?
 - [ ] better AST context awareness while visiting a node (is this node inside X type of node?)

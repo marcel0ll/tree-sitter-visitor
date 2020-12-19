@@ -43,8 +43,29 @@ struct visit_context * context_new(const char * source) {
   return cont;
 }
 
+void context_delete(struct visit_context * context) {
+  hashmap_free(context->visitors);
+  free(context->source);
+  free(context);
+}
+
 bool context_add_visitor(struct visit_context * context, struct visitor * visitor) {
   return hashmap_set(context->visitors, visitor);
+}
+
+bool context_add_multiple_visitors(struct visit_context * context, char * types[], void (*visit)()) {
+  for (int i = 0; types[i] != NULL; i++) {
+    struct visitor * v = malloc(sizeof(struct visitor));
+    char * type = (char *)types[i];
+
+    v->type = malloc(strlen(type) + 1);
+    strcpy(v->type, type);
+    v->visit = visit;
+
+    hashmap_set(context->visitors, v);
+  }
+
+  return 1;
 }
 
 const char * context_get_source(struct visit_context * context) {
@@ -80,6 +101,7 @@ char * ts_node_text (TSNode node, struct visit_context * context) {
   return code;
 }
 
+int once = 1;
 // visit pre order
 void visit_tree (TSNode node, struct visit_context * context) {
 
@@ -87,7 +109,11 @@ void visit_tree (TSNode node, struct visit_context * context) {
 
   if (DEBUG) {
     /* printf("Visiting node: %u\n", (unsigned int) node.id); */
-    printf("Visiting: %s\n", ts_node_type(node));
+    /* printf("Visiting: %s\n", ts_node_type(node)); */
+
+    if(once-- > 0) {
+      hashmap_scan(context->visitors, visitor_iter, NULL);
+    }
   }
   const char * type = ts_node_type(node);
 

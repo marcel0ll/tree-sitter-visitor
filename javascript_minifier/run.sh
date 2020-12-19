@@ -6,5 +6,5 @@ clang                                   \
   ../../tree-sitter-javascript/src/scanner.c         \
   ../libs/hashmap.c         \
   ../tree-sitter-visitor.c         \
-  -o jsminify -g
+  -o jsminify
 

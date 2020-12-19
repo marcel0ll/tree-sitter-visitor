@@ -16,11 +16,17 @@ struct visitor;
 // creates new visit_context
 struct visit_context * context_new(const char * source);
 
+// frees memory for context
+void context_delete(struct visit_context * context);
+
 // returns source from visit_context
 const char * context_get_source(struct visit_context * context);
 
 // adds visitor to visit_context
 bool context_add_visitor(struct visit_context * context, struct visitor * visitor);
+
+// creates and add multiple visitors to visit_context based on a list of types and one function
+bool context_add_multiple_visitors(struct visit_context * context, char ** types, void (*visit)());
 
 // returns visitors hashmap from a visit_context
 struct hashmap * context_get_visitors(struct visit_context * context);
