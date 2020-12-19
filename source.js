@@ -1,5 +1,9 @@
 let a = 2;
-export default class Event {
+
+function b() { };
+var c = function(){};
+
+class Event {
   constructor(sender) {
     this._sender = sender;
     this._handlers = [];

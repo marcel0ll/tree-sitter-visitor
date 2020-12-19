@@ -3,7 +3,7 @@
 #include <tree_sitter/api.h>
 #include "libs/hashmap.h"
 
-const int DEBUG = 1;
+const int DEBUG = 0;
 
 struct visit_context {
   const char * source;
@@ -15,33 +15,6 @@ struct visitor {
   void * visit;
 };
 
-size_t visitor_size() {
-  return sizeof(struct visitor);
-}
-
-bool visitor_iter(const void *item, void *udata) {
-  const struct visitor *visitor = item;
-  printf("TYPE: %s\n", visitor->type);
-  return true;
-}
-
-
-struct visit_context * context_new(const char * source, struct hashmap * visitors) {
-  return &(struct visit_context){ .source=source, .visitors=visitors};
-}
-
-const char * context_get_source(struct visit_context * context) {
-  return context->source;
-}
-
-struct visitor * visitor_new(const char * type, void (*visit)()) {
-  struct visitor * v = malloc(visitor_size());
-  v->type = type;
-  v->visit = visit;
-
-  return v;
-}
-
 int visitor_compare(const void *a, const void *b, void *data) {
   const struct visitor *va = a;
   const struct visitor *vb = b;
@@ -51,6 +24,43 @@ int visitor_compare(const void *a, const void *b, void *data) {
 uint64_t visitor_hash(const void *item, uint64_t seed0, uint64_t seed1) {
     const struct visitor *visitor = item;
     return hashmap_sip(visitor->type, strlen(visitor->type), seed0, seed1);
+}
+
+bool visitor_iter(const void *item, void *udata) {
+  const struct visitor *visitor = item;
+  printf("TYPE: %s\n", visitor->type);
+  return true;
+}
+
+struct visit_context * context_new(const char * source) {
+  struct hashmap * visitors = hashmap_new(sizeof(struct visitor), 0, 0, 0, visitor_hash,
+      visitor_compare, NULL);
+
+  struct visit_context * cont = malloc(sizeof (struct visit_context));
+  cont->source = source;
+  cont->visitors = visitors;
+
+  return cont;
+}
+
+bool context_add_visitor(struct visit_context * context, struct visitor * visitor) {
+  return hashmap_set(context->visitors, visitor);
+}
+
+const char * context_get_source(struct visit_context * context) {
+  return context->source;
+}
+
+struct hashmap * context_get_visitors(struct visit_context * context) {
+  return context->visitors;
+}
+
+struct visitor * visitor_new(const char * type, void (*visit)()) {
+  struct visitor * v = malloc(sizeof(struct visitor));
+  v->type = type;
+  v->visit = visit;
+
+  return v;
 }
 
 char * get_text (uint32_t start, uint32_t end, const char * source) {
@@ -71,22 +81,23 @@ char * ts_node_text (TSNode node, struct visit_context * context) {
 }
 
 // visit pre order
-void visit_tree (TSNode node, struct visit_context context) {
+void visit_tree (TSNode node, struct visit_context * context) {
+
   if (ts_node_is_null(node)) return;
 
   if (DEBUG) {
-    printf("Visiting node: %u\n", (unsigned int) node.id);
-    /* hashmap_scan(context.visitors, visitor_iter, NULL); */
+    /* printf("Visiting node: %u\n", (unsigned int) node.id); */
+    /* printf("Visiting: %s\n", ts_node_type(node)); */
   }
   const char * type = ts_node_type(node);
 
-  struct visitor * visitor = hashmap_get(context.visitors, &(struct visitor){ .type=type});
+  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=type});
   if (visitor != NULL) {
     void (*visitor_fn)() = visitor->visit; 
     visitor_fn(node, context);
   } else {
     if (DEBUG) {
-      printf("Missing: %s\n", ts_node_type(node));
+      printf("\nMissing: %s\n", ts_node_type(node));
     }
   }
 
