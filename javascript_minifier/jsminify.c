@@ -126,7 +126,7 @@ int main(int argc, char * argv[]) {
   context_add_multiple_visitors(context, spaced_keyword_types, node_spaced_keyword);
 
   const char * keyword_types[] = { "for", "do", "while", "this", "if", "switch",
-    "undefined" "null", "debugger", "get" "set" "yield" "eval" "!", "?", "%",
+    "undefined", "null", "debugger", "get" "set" "yield" "eval" "!", "?", "%",
     "*", "**", "++", "+", "--", "-", "~", ".", ":", "=", "==", "+=", "-=",
     "*=", "/=", "&=", "|=", "<=", ">=", "!=", "===", "!==", ",",  "(",  ")",
     "<",  ">",  "|",  "^",  "&",  ">>", ">>>" "<<", "[",  "]",  "{",  "}",
