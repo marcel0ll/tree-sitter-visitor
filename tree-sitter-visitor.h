@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <tree_sitter/api.h>
-#include "libs/hashmap.h"
+#include "../hashmap.c/hashmap.h"
 
 // struct to hold the visiting context(.source, .visitors)
 struct visit_context;

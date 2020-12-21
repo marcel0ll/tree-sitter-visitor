@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <tree_sitter/api.h>
-#include "libs/hashmap.h"
+#include "../hashmap.c/hashmap.h"
 
 const int DEBUG = 0;
 
