@@ -4,11 +4,12 @@ A hashmap implementation of the visitor pattern for tree-sitter.
 
 ## Dependencies
 
+[tree-sitter](https://github.com/tree-sitter/tree-sitter)
 [hashmap](https://github.com/tidwall/hashmap.c)
 
 ## Usage
 
-Check js minifier for how to use this
+Check [jsminify](https://github.com/marcel0ll/jsminify) for how to use this
 
 ## TO DO
 
@@ -33,11 +34,17 @@ struct visitor;
 // creates new visit_context
 struct visit_context * context_new(const char * source);
 
+// frees memory for context
+void context_delete(struct visit_context * context);
+
 // returns source from visit_context
 const char * context_get_source(struct visit_context * context);
 
 // adds visitor to visit_context
 bool context_add_visitor(struct visit_context * context, struct visitor * visitor);
+
+// creates and add multiple visitors to visit_context based on a list of types and one function
+bool context_add_multiple_visitors(struct visit_context * context, char ** types, void (*visit)());
 
 // returns visitors hashmap from a visit_context
 struct hashmap * context_get_visitors(struct visit_context * context);
@@ -58,10 +65,3 @@ void visit_tree (TSNode node, struct visit_context * context);
 // Opens a file and returns its content
 const char * get_source(const char * path);
 ```
-
-
-
-
-
-
-
