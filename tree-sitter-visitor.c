@@ -3,11 +3,10 @@
 #include <tree_sitter/api.h>
 #include "../hashmap.c/hashmap.h"
 
-const int DEBUG = 0;
-
 struct visit_context {
   const char * source;
   struct hashmap * visitors;
+  int debug;
 };
 
 struct visitor {
@@ -28,17 +27,18 @@ uint64_t visitor_hash(const void *item, uint64_t seed0, uint64_t seed1) {
 
 bool visitor_iter(const void *item, void *udata) {
   const struct visitor *visitor = item;
-  printf("TYPE: %s\n", visitor->type);
+  printf("%s\n", visitor->type);
   return true;
 }
 
-struct visit_context * context_new(const char * source) {
+struct visit_context * context_new(const char * source, int debug) {
   struct hashmap * visitors = hashmap_new(sizeof(struct visitor), 0, 0, 0, visitor_hash,
       visitor_compare, NULL);
 
   struct visit_context * cont = malloc(sizeof (struct visit_context));
   cont->source = source;
   cont->visitors = visitors;
+  cont->debug = debug;
 
   return cont;
 }
@@ -107,53 +107,81 @@ void visit_tree (TSNode node, struct visit_context * context) {
 
   if (ts_node_is_null(node)) return;
 
-  if (DEBUG) {
-    /* printf("Visiting node: %u\n", (unsigned int) node.id); */
-    /* printf("Visiting: %s\n", ts_node_type(node)); */
-
-    if(once-- > 0) {
-      hashmap_scan(context->visitors, visitor_iter, NULL);
-    }
-  }
   const char * type = ts_node_type(node);
-
   struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=type});
+
+  char *type_out = malloc(strlen(type) + 5);
+  strcpy(type_out, type);
+  strcat(type_out, "_out");
+  struct visitor * visitor_out = hashmap_get(context->visitors, &(struct visitor){ .type=type_out});
+
+  if (context->debug) {
+    if(once-- > 0) {
+      printf("Registered visitor types:\n");
+      hashmap_scan(context->visitors, visitor_iter, NULL);
+      printf("------\n");
+    }
+
+    char * in = "-in";
+    if (visitor != NULL) {
+      in = "+in";
+    }
+
+    char * out = "-out";
+    if (visitor_out != NULL) {
+      out = "+out";
+    }
+
+    char * text = ts_node_text(node, context);
+    TSSymbol sym = ts_node_symbol(node);
+    printf("Id: %u  %s  %s  %s  %hu\t%s\t", (unsigned int) node.id, in, out, type, sym, text); 
+  } 
+  // check for type visitors
   if (visitor != NULL) {
     void (*visitor_fn)() = visitor->visit; 
     visitor_fn(node, context);
-  } else {
-    if (DEBUG) {
-      /* printf("\nMissing: %s\n", ts_node_type(node)); */
+  } 
+
+  if (context->debug) {
+    printf("\t");
+    if (visitor_out != NULL) {
+      void (*visitor_out_fn)() = visitor_out->visit; 
+      visitor_out_fn(node, context);
     }
+    printf("\n");
   }
 
+  // Visit child nodes 
   unsigned child_count = ts_node_child_count(node);
   for (unsigned i = 0; i < child_count; i++) {
     TSNode child_node = ts_node_child(node, i);
     visit_tree(child_node, context);
   }
 
-  char *type_out = malloc(strlen(type) + 5);
-  strcpy(type_out, type);
-  strcat(type_out, "_out");
-
-  struct visitor * visitor_out = hashmap_get(context->visitors, &(struct visitor){ .type=type_out});
-  if (visitor_out != NULL) {
-    void (*visitor_out_fn)() = visitor_out->visit; 
-    visitor_out_fn(node, context);
-    /* printf("Visiting: %s\n", type_out); */
+  // Check for type_out visitors
+  if (!context->debug) {
+    if (visitor_out != NULL) {
+      void (*visitor_out_fn)() = visitor_out->visit; 
+      visitor_out_fn(node, context);
+    }
   }
 }
 
 const char * get_source(const char * path) {
-  FILE *file;
-  file = fopen(path, "rb");
-  fseek(file, 0, SEEK_END);
-  long fsize = ftell(file);
-  fseek(file, 0, SEEK_SET);
+  FILE *file = fopen(path, "rb");
+  if (file) {
+    fseek(file, 0, SEEK_END);
+    long length = ftell(file);
+    fseek(file, 0, SEEK_SET);
 
-  char *source_code = malloc(fsize + 1);
-  fread(source_code, 1, fsize, file);
+    char *source_code = malloc(length + 1);
+    if (source_code) {
+      fread(source_code, 1, length, file);
+      source_code[length] = '\0';
+    }
 
-  return (const char *) source_code;
+    return (const char *) source_code;
+  }
+
+  return "";
 }
