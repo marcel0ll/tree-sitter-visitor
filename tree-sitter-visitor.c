@@ -53,7 +53,7 @@ bool context_add_visitor(struct visit_context * context, struct visitor * visito
   return hashmap_set(context->visitors, visitor);
 }
 
-bool context_add_multiple_visitors(struct visit_context * context, char * types[], void (*visit)()) {
+bool context_add_multiple_visitors(struct visit_context * context, const char * types[], void (*visit)()) {
   for (int i = 0; types[i] != NULL; i++) {
     struct visitor * v = malloc(sizeof(struct visitor));
     char * type = (char *)types[i];

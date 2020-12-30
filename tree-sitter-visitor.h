@@ -26,7 +26,7 @@ const char * context_get_source(struct visit_context * context);
 bool context_add_visitor(struct visit_context * context, struct visitor * visitor);
 
 // creates and add multiple visitors to visit_context based on a list of types and one function
-bool context_add_multiple_visitors(struct visit_context * context, char * types[], void (*visit)());
+bool context_add_multiple_visitors(struct visit_context * context, const char * types[], void (*visit)());
 
 // returns visitors hashmap from a visit_context
 struct hashmap * context_get_visitors(struct visit_context * context);
