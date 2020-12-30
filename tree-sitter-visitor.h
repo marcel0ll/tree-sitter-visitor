@@ -23,16 +23,13 @@ void context_delete(struct visit_context * context);
 const char * context_get_source(struct visit_context * context);
 
 // adds visitor to visit_context
-bool context_add_visitor(struct visit_context * context, struct visitor * visitor);
+bool context_add_visitor(struct visit_context * context, const char * type, void (*visit)());
 
 // creates and add multiple visitors to visit_context based on a list of types and one function
 bool context_add_multiple_visitors(struct visit_context * context, const char * types[], void (*visit)());
 
 // returns visitors hashmap from a visit_context
 struct hashmap * context_get_visitors(struct visit_context * context);
-
-// creates new struct to hold a visitor which holds a type and a visit function
-struct visitor * visitor_new(const char * type, void (*visit)());
 
 // function to return a string from a bigger string from index start to end
 char * get_text(uint32_t start, uint32_t end, const char * source);

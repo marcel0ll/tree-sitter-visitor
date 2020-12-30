@@ -10,7 +10,7 @@ struct visit_context {
 };
 
 struct visitor {
-  char * type;
+  const char * type;
   void * visit;
 };
 
@@ -49,20 +49,18 @@ void context_delete(struct visit_context * context) {
   free(context);
 }
 
-bool context_add_visitor(struct visit_context * context, struct visitor * visitor) {
-  return hashmap_set(context->visitors, visitor);
+bool context_add_visitor(struct visit_context * context, const char * type, void (*visit)()) {
+  struct visitor v = {.type=type, .visit=visit};
+
+  return hashmap_set(context->visitors, &v);
 }
 
 bool context_add_multiple_visitors(struct visit_context * context, const char * types[], void (*visit)()) {
   for (int i = 0; types[i] != NULL; i++) {
-    struct visitor * v = malloc(sizeof(struct visitor));
     const char * type = (const char *)types[i];
+    struct visitor v = {.type=type, .visit=visit};
 
-    v->type = malloc(strlen(type) + 1);
-    strcpy(v->type, type);
-    v->visit = visit;
-
-    hashmap_set(context->visitors, v);
+    hashmap_set(context->visitors, &v);
   }
 
   return 1;
@@ -74,14 +72,6 @@ const char * context_get_source(struct visit_context * context) {
 
 struct hashmap * context_get_visitors(struct visit_context * context) {
   return context->visitors;
-}
-
-struct visitor * visitor_new(const char * type, void (*visit)()) {
-  struct visitor * v = malloc(sizeof(struct visitor));
-  v->type = type;
-  v->visit = visit;
-
-  return v;
 }
 
 char * get_text (uint32_t start, uint32_t end, const char * source) {
@@ -108,12 +98,12 @@ void visit_tree (TSNode node, struct visit_context * context) {
   if (ts_node_is_null(node)) return;
 
   const char * type = ts_node_type(node);
-  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=type});
+  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
 
   char *type_out = malloc(strlen(type) + 5);
   strcpy(type_out, type);
   strcat(type_out, "_out");
-  struct visitor * visitor_out = hashmap_get(context->visitors, &(struct visitor){ .type=type_out});
+  struct visitor * visitor_out = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type_out});
 
   if (context->debug) {
     if(once-- > 0) {
