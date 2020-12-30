@@ -10,7 +10,7 @@ struct visit_context {
 };
 
 struct visitor {
-  const char * type;
+  char * type;
   void * visit;
 };
 
@@ -45,7 +45,7 @@ struct visit_context * context_new(const char * source, int debug) {
 
 void context_delete(struct visit_context * context) {
   hashmap_free(context->visitors);
-  free(context->source);
+  free((char *)context->source);
   free(context);
 }
 
@@ -56,7 +56,7 @@ bool context_add_visitor(struct visit_context * context, struct visitor * visito
 bool context_add_multiple_visitors(struct visit_context * context, const char * types[], void (*visit)()) {
   for (int i = 0; types[i] != NULL; i++) {
     struct visitor * v = malloc(sizeof(struct visitor));
-    char * type = (char *)types[i];
+    const char * type = (const char *)types[i];
 
     v->type = malloc(strlen(type) + 1);
     strcpy(v->type, type);
@@ -134,7 +134,7 @@ void visit_tree (TSNode node, struct visit_context * context) {
 
     char * text = ts_node_text(node, context);
     TSSymbol sym = ts_node_symbol(node);
-    printf("Id: %u  %s  %s  %s  %hu\t%s\t", (unsigned int) node.id, in, out, type, sym, text); 
+    printf("Id: %lu  %s  %s  %s  %hu\t%s\t", (uintptr_t) node.id, in, out, type, sym, text); 
   } 
   // check for type visitors
   if (visitor != NULL) {
@@ -171,12 +171,17 @@ const char * get_source(const char * path) {
   FILE *file = fopen(path, "rb");
   if (file) {
     fseek(file, 0, SEEK_END);
-    long length = ftell(file);
+    size_t length = ftell(file);
     fseek(file, 0, SEEK_SET);
 
     char *source_code = malloc(length + 1);
     if (source_code) {
-      fread(source_code, 1, length, file);
+      size_t bytes_read = fread(source_code, 1, length, file);
+      if (bytes_read != length) {
+        fputs ("Reading error",stderr); 
+        exit (3);
+      }
+
       source_code[length] = '\0';
     }
 
