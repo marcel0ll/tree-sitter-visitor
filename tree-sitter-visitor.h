@@ -22,11 +22,19 @@ void context_delete(struct visit_context * context);
 // returns source from visit_context
 const char * context_get_source(struct visit_context * context);
 
-// adds visitor to visit_context
-bool context_add_visitor(struct visit_context * context, const char * type, void (*visit)());
+// set both type 'enter' and 'exit' visit function
+bool context_set_type_visitor(struct visit_context * context, const char * type, void (*enter)(), void (*exit)());
+// set type 'enter' visit function
+bool context_set_type_enter(struct visit_context * context, const char * type, void (*enter)());
+// set type 'exit' visit function
+bool context_set_type_exit(struct visit_context * context, const char * type, void (*exit)());
 
-// creates and add multiple visitors to visit_context based on a list of types and one function
-bool context_add_multiple_visitors(struct visit_context * context, const char * types[], void (*visit)());
+// set for each type in types both 'enter' and 'exit' visit function
+void context_set_types_visitor(struct visit_context * context, const char * types[], void (*enter)(), void (*exit)());
+// set for each type in types 'enter' visit function
+bool context_set_types_enter(struct visit_context * context, const char * types[], void (*enter)());
+// set for each type in types 'exit' visit function
+bool context_set_types_exit(struct visit_context * context, const char * types[], void (*exit)());
 
 // returns visitors hashmap from a visit_context
 struct hashmap * context_get_visitors(struct visit_context * context);
@@ -37,8 +45,7 @@ char * get_text(uint32_t start, uint32_t end, const char * source);
 // function to return the source text from a node 
 char * ts_node_text (TSNode node, struct visit_context * source);
 
-// The 'main' function to start visiting the tree
-// it visits in "pre order" 
+// visit the parsed tree in pre order
 void visit_tree (TSNode node, struct visit_context * context);
 
 // Opens a file and returns its content

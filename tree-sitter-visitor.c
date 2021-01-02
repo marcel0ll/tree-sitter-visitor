@@ -11,7 +11,8 @@ struct visit_context {
 
 struct visitor {
   const char * type;
-  void * visit;
+  void * enter;
+  void * exit;
 };
 
 int visitor_compare(const void *a, const void *b, void *data) {
@@ -21,8 +22,8 @@ int visitor_compare(const void *a, const void *b, void *data) {
 }
 
 uint64_t visitor_hash(const void *item, uint64_t seed0, uint64_t seed1) {
-    const struct visitor *visitor = item;
-    return hashmap_sip(visitor->type, strlen(visitor->type), seed0, seed1);
+  const struct visitor *visitor = item;
+  return hashmap_sip(visitor->type, strlen(visitor->type), seed0, seed1);
 }
 
 bool visitor_iter(const void *item, void *udata) {
@@ -49,21 +50,57 @@ void context_delete(struct visit_context * context) {
   free(context);
 }
 
-bool context_add_visitor(struct visit_context * context, const char * type, void (*visit)()) {
-  struct visitor v = {.type=type, .visit=visit};
-
-  return hashmap_set(context->visitors, &v);
+// set both type 'enter' and 'exit' visit function
+bool context_set_type_visitor(struct visit_context * context, const char * type, void (*enter)(), void (*exit)()) {
+  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
+  if (visitor != NULL) {
+    visitor->enter = enter;
+    visitor->exit = exit;
+    return visitor;
+  } else {
+    struct visitor v = {.type=type, .enter=enter, .exit=exit};
+    return hashmap_set(context->visitors, &v);
+  }
 }
 
-bool context_add_multiple_visitors(struct visit_context * context, const char * types[], void (*visit)()) {
-  for (int i = 0; types[i] != NULL; i++) {
-    const char * type = (const char *)types[i];
-    struct visitor v = {.type=type, .visit=visit};
-
-    hashmap_set(context->visitors, &v);
+// set type 'enter' visit function
+bool context_set_type_enter(struct visit_context * context, const char * type, void (*enter)()) {
+  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
+  if (visitor != NULL) {
+    visitor->enter = enter;
+    return visitor;
+  } else {
+    struct visitor v = {.type=type, .enter=enter, .exit=NULL};
+    return hashmap_set(context->visitors, &v);
   }
+}
+// set type 'exit' visit function
+bool context_set_type_exit(struct visit_context * context, const char * type, void (*exit)()) {
+  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
+  if (visitor != NULL) {
+    visitor->exit = exit;
+    return visitor;
+  } else {
+    struct visitor v = {.type=type, .enter=NULL, .exit=exit};
+    return hashmap_set(context->visitors, &v);
+  }
+}
 
-  return 1;
+// set for each type in types both 'enter' and 'exit' visit function
+void context_set_types_visitor(struct visit_context * context, const char * types[], void (*enter)(), void (*exit)()) {
+  for (int i = 0; types[i] != NULL; i++)
+    context_set_type_visitor(context, (const char *)types[i], enter, exit);
+}
+
+// set for each type in types 'enter' visit function
+void context_set_types_enter(struct visit_context * context, const char * types[], void (*enter)()) {
+  for (int i = 0; types[i] != NULL; i++)
+    context_set_type_enter(context, (const char *)types[i], enter);
+}
+// set for each type in types 'exit' visit function
+void context_set_types_exit(struct visit_context * context, const char * types[], void (*exit)()) {
+  for (int i = 0; types[i] != NULL; i++)
+    context_set_type_exit(context, (const char *)types[i], exit);
 }
 
 const char * context_get_source(struct visit_context * context) {
@@ -100,11 +137,6 @@ void visit_tree (TSNode node, struct visit_context * context) {
   const char * type = ts_node_type(node);
   struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
 
-  char *type_out = malloc(strlen(type) + 5);
-  strcpy(type_out, type);
-  strcat(type_out, "_out");
-  struct visitor * visitor_out = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type_out});
-
   if (context->debug) {
     if(once-- > 0) {
       printf("Registered visitor types:\n");
@@ -112,31 +144,32 @@ void visit_tree (TSNode node, struct visit_context * context) {
       printf("------\n");
     }
 
-    char * in = "-in";
-    if (visitor != NULL) {
-      in = "+in";
+    char * in = "-enter";
+    if (visitor->enter != NULL) {
+      in = "+enter";
     }
 
-    char * out = "-out";
-    if (visitor_out != NULL) {
-      out = "+out";
+    char * out = "-exit";
+    if (visitor->exit != NULL) {
+      out = "+exit";
     }
 
     char * text = ts_node_text(node, context);
     TSSymbol sym = ts_node_symbol(node);
-    printf("Id: %lu  %s  %s  %s  %hu\t%s\t", (uintptr_t) node.id, in, out, type, sym, text); 
+    printf("Id: %lu  %s  %s  %s  %hu\t%s\t", (uintptr_t) node.id, in, out, type, sym, text);
   } 
+
   // check for type visitors
-  if (visitor != NULL) {
-    void (*visitor_fn)() = visitor->visit; 
-    visitor_fn(node, context);
+  if (visitor->enter != NULL) {
+    void (*enter)() = visitor->enter; 
+    enter(node, context);
   } 
 
   if (context->debug) {
     printf("\t");
-    if (visitor_out != NULL) {
-      void (*visitor_out_fn)() = visitor_out->visit; 
-      visitor_out_fn(node, context);
+    if (visitor->exit != NULL) {
+      void (*exit)() = visitor->exit; 
+      exit(node, context);
     }
     printf("\n");
   }
@@ -148,11 +181,10 @@ void visit_tree (TSNode node, struct visit_context * context) {
     visit_tree(child_node, context);
   }
 
-  // Check for type_out visitors
   if (!context->debug) {
-    if (visitor_out != NULL) {
-      void (*visitor_out_fn)() = visitor_out->visit; 
-      visitor_out_fn(node, context);
+    if (visitor->exit != NULL) {
+      void (*exit)() = visitor->exit; 
+      exit(node, context);
     }
   }
 }
