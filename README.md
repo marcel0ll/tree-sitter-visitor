@@ -1,6 +1,6 @@
 # tree-sitter-visitor
 
-version: v0.0.2
+version: v0.0.3
 
 A hashmap implementation of the visitor pattern for tree-sitter.
 

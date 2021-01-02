@@ -52,55 +52,16 @@ void context_delete(struct visit_context * context) {
 
 // set both type 'enter' and 'exit' visit function
 bool context_set_type_visitor(struct visit_context * context, const char * type, void (*enter)(), void (*exit)()) {
-  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
-  if (visitor != NULL) {
-    visitor->enter = enter;
-    visitor->exit = exit;
-    return visitor;
-  } else {
-    struct visitor v = {.type=type, .enter=enter, .exit=exit};
-    return hashmap_set(context->visitors, &v);
-  }
-}
-
-// set type 'enter' visit function
-bool context_set_type_enter(struct visit_context * context, const char * type, void (*enter)()) {
-  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
-  if (visitor != NULL) {
-    visitor->enter = enter;
-    return visitor;
-  } else {
-    struct visitor v = {.type=type, .enter=enter, .exit=NULL};
-    return hashmap_set(context->visitors, &v);
-  }
-}
-// set type 'exit' visit function
-bool context_set_type_exit(struct visit_context * context, const char * type, void (*exit)()) {
-  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
-  if (visitor != NULL) {
-    visitor->exit = exit;
-    return visitor;
-  } else {
-    struct visitor v = {.type=type, .enter=NULL, .exit=exit};
-    return hashmap_set(context->visitors, &v);
-  }
+  struct visitor v = {.type=type, .enter=enter, .exit=exit};
+  return hashmap_set(context->visitors, &v);
 }
 
 // set for each type in types both 'enter' and 'exit' visit function
 void context_set_types_visitor(struct visit_context * context, const char * types[], void (*enter)(), void (*exit)()) {
-  for (int i = 0; types[i] != NULL; i++)
-    context_set_type_visitor(context, (const char *)types[i], enter, exit);
-}
-
-// set for each type in types 'enter' visit function
-void context_set_types_enter(struct visit_context * context, const char * types[], void (*enter)()) {
-  for (int i = 0; types[i] != NULL; i++)
-    context_set_type_enter(context, (const char *)types[i], enter);
-}
-// set for each type in types 'exit' visit function
-void context_set_types_exit(struct visit_context * context, const char * types[], void (*exit)()) {
-  for (int i = 0; types[i] != NULL; i++)
-    context_set_type_exit(context, (const char *)types[i], exit);
+  for (int i = 0; types[i] != NULL; i++) {
+    struct visitor v = {.type=(const char *)types[i], .enter=enter, .exit=exit};
+    hashmap_set(context->visitors, &v);
+  }
 }
 
 const char * context_get_source(struct visit_context * context) {

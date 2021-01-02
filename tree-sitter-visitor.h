@@ -24,17 +24,8 @@ const char * context_get_source(struct visit_context * context);
 
 // set both type 'enter' and 'exit' visit function
 bool context_set_type_visitor(struct visit_context * context, const char * type, void (*enter)(), void (*exit)());
-// set type 'enter' visit function
-bool context_set_type_enter(struct visit_context * context, const char * type, void (*enter)());
-// set type 'exit' visit function
-bool context_set_type_exit(struct visit_context * context, const char * type, void (*exit)());
-
 // set for each type in types both 'enter' and 'exit' visit function
 void context_set_types_visitor(struct visit_context * context, const char * types[], void (*enter)(), void (*exit)());
-// set for each type in types 'enter' visit function
-bool context_set_types_enter(struct visit_context * context, const char * types[], void (*enter)());
-// set for each type in types 'exit' visit function
-bool context_set_types_exit(struct visit_context * context, const char * types[], void (*exit)());
 
 // returns visitors hashmap from a visit_context
 struct hashmap * context_get_visitors(struct visit_context * context);
