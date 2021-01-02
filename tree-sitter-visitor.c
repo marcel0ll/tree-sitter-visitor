@@ -97,6 +97,16 @@ void visit_tree (TSNode node, struct visit_context * context) {
 
   const char * type = ts_node_type(node);
   struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
+  void (*enter)() = NULL;
+  void (*exit)() = NULL;
+  if (visitor != NULL) {
+      if (visitor->enter != NULL) {
+        enter = visitor->enter;
+      }
+      if (visitor->exit != NULL) {
+        exit = visitor->exit;
+      }
+  }
 
   if (context->debug) {
     if(once-- > 0) {
@@ -106,12 +116,12 @@ void visit_tree (TSNode node, struct visit_context * context) {
     }
 
     char * in = "-enter";
-    if (visitor->enter != NULL) {
+    char * out = "-exit";
+    if (enter != NULL) {
       in = "+enter";
     }
 
-    char * out = "-exit";
-    if (visitor->exit != NULL) {
+    if (exit != NULL) {
       out = "+exit";
     }
 
@@ -121,15 +131,13 @@ void visit_tree (TSNode node, struct visit_context * context) {
   } 
 
   // check for type visitors
-  if (visitor->enter != NULL) {
-    void (*enter)() = visitor->enter; 
+  if (enter != NULL) {
     enter(node, context);
   } 
 
   if (context->debug) {
     printf("\t");
-    if (visitor->exit != NULL) {
-      void (*exit)() = visitor->exit; 
+    if (exit != NULL) {
       exit(node, context);
     }
     printf("\n");
@@ -143,8 +151,7 @@ void visit_tree (TSNode node, struct visit_context * context) {
   }
 
   if (!context->debug) {
-    if (visitor->exit != NULL) {
-      void (*exit)() = visitor->exit; 
+    if (exit != NULL) {
       exit(node, context);
     }
   }
