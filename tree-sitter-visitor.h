@@ -35,6 +35,9 @@ char * get_text(uint32_t start, uint32_t end, const char * source);
 // function to return the source text from a node 
 char * ts_node_text (TSNode node, struct visit_context * source);
 
+// visit the parsed tree in pre order using the cursor api
+void visit_tree_cursor (TSNode tree, struct visit_context * context);
+
 // visit the parsed tree in pre order
 void visit_tree (TSNode node, struct visit_context * context);
 
