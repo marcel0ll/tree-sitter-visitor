@@ -31,6 +31,14 @@ struct visit_context * context_new(TSLanguage * language, const char * source, i
 }
 
 void context_delete(struct visit_context * context) {
+  uint32_t visitor_count = ts_language_symbol_count(context->language);
+  uint32_t i;
+  for(i = 0; i < visitor_count; i++ ) {
+    if (context->visitors[i] != NULL) {
+      free(context->visitors[i]);
+    }
+  }
+  free(context->visitors);
   free((char *)context->source);
   free(context);
 }
