@@ -89,70 +89,91 @@ char * ts_node_text (TSNode node, struct visit_context * context) {
   return code;
 }
 
-int once = 1;
-// visit pre order
 void visit_tree (TSNode node, struct visit_context * context) {
+  if (context->debug) {
+    printf("Registered visitor types:\n");
+    hashmap_scan(context->visitors, visitor_iter, NULL);
+    printf("------\n");
+    _debug_tree(node, context);
+  } else {
+    _visit_tree(node, context);
+  }
+}
 
-  if (ts_node_is_null(node)) return;
-
+void _debug_tree (TSNode node, struct visit_context * context) {
   const char * type = ts_node_type(node);
   struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
+
   void (*enter)() = NULL;
   void (*exit)() = NULL;
+
   if (visitor != NULL) {
-      if (visitor->enter != NULL) {
-        enter = visitor->enter;
-      }
-      if (visitor->exit != NULL) {
-        exit = visitor->exit;
-      }
+    if (visitor->enter != NULL) {
+      enter = visitor->enter;
+    }
+    if (visitor->exit != NULL) {
+      exit = visitor->exit;
+    }
   }
 
-  if (context->debug) {
-    if(once-- > 0) {
-      printf("Registered visitor types:\n");
-      hashmap_scan(context->visitors, visitor_iter, NULL);
-      printf("------\n");
-    }
+  char * in = "-enter";
+  char * out = "-exit";
+  if (enter != NULL) {
+    in = "+enter";
+  }
 
-    char * in = "-enter";
-    char * out = "-exit";
-    if (enter != NULL) {
-      in = "+enter";
-    }
+  if (exit != NULL) {
+    out = "+exit";
+  }
 
-    if (exit != NULL) {
-      out = "+exit";
-    }
+  char * text = ts_node_text(node, context);
+  TSSymbol sym = ts_node_symbol(node);
+  printf("Id: %lu  %s  %s  %s  %hu\t%s\t", (uintptr_t) node.id, in, out, type, sym, text);
 
-    char * text = ts_node_text(node, context);
-    TSSymbol sym = ts_node_symbol(node);
-    printf("Id: %lu  %s  %s  %s  %hu\t%s\t", (uintptr_t) node.id, in, out, type, sym, text);
-  } 
-
-  // check for type visitors
   if (enter != NULL) {
     enter(node, context);
   } 
-
-  if (context->debug) {
-    printf("\t");
-    if (exit != NULL) {
-      exit(node, context);
-    }
-    printf("\n");
+  printf("\t");
+  if (exit != NULL) {
+    exit(node, context);
   }
+  printf("\n");
 
-  // Visit child nodes 
   unsigned child_count = ts_node_child_count(node);
   for (unsigned i = 0; i < child_count; i++) {
     TSNode child_node = ts_node_child(node, i);
-    visit_tree(child_node, context);
+    _debug_tree(child_node, context);
   }
+}
+// visit pre order
+void _visit_tree (TSNode node, struct visit_context * context) {
+  const char * type = ts_node_type(node);
+  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
 
-  if (!context->debug) {
-    if (exit != NULL) {
+  if (visitor != NULL) {
+    void (*enter)() = NULL;
+    void (*exit)() = NULL;
+
+    if (visitor->enter != NULL) {
+      enter = visitor->enter;
+      enter(node, context);
+    }
+
+    unsigned child_count = ts_node_child_count(node);
+    for (unsigned i = 0; i < child_count; i++) {
+      TSNode child_node = ts_node_child(node, i);
+      _visit_tree(child_node, context);
+    }
+
+    if (visitor->exit != NULL) {
+      exit = visitor->exit;
       exit(node, context);
+    }
+  } else {
+    unsigned child_count = ts_node_child_count(node);
+    for (unsigned i = 0; i < child_count; i++) {
+      TSNode child_node = ts_node_child(node, i);
+      _visit_tree(child_node, context);
     }
   }
 }
