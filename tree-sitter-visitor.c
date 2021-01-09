@@ -73,21 +73,18 @@ struct visitor ** context_get_visitors(struct visit_context * context) {
   return context->visitors;
 }
 
-char * get_text (uint32_t start, uint32_t end, const char * source) {
-  size_t len = (end - start);
-  char * text = malloc((len + 1));
+char * ts_node_text (TSNode node, struct visit_context * context) {
+  uint32_t writer = ts_node_start_byte(node);
+  uint32_t end = ts_node_end_byte(node);
+  char * text = malloc(end - writer + 1);
+  char * t = text;
 
-  for (size_t i = 0; i < len; i++) {
-    text[i] = source[start + i];
+  while (writer < end) {
+    *t++ = context->source[writer++];
   }
-  text[len] = '\0';
+  *t = '\0';
 
   return text;
-}
-
-char * ts_node_text (TSNode node, struct visit_context * context) {
-  char * code = get_text(ts_node_start_byte(node), ts_node_end_byte(node), context->source);
-  return code;
 }
 
 void _debug_tree (TSNode node, struct visit_context * context) {
