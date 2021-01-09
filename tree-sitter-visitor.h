@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <tree_sitter/api.h>
-#include "../hashmap.c/hashmap.h"
 
 // struct to hold the visiting context(.source, .visitors)
 struct visit_context;
@@ -14,7 +13,7 @@ struct visit_context;
 struct visitor;
 
 // creates new visit_context
-struct visit_context * context_new(const char * source, int debug);
+struct visit_context * context_new(TSLanguage * language, const char * source, int debug);
 
 // frees memory for context
 void context_delete(struct visit_context * context);
@@ -28,7 +27,7 @@ bool context_set_type_visitor(struct visit_context * context, const char * type,
 void context_set_types_visitor(struct visit_context * context, const char * types[], void (*enter)(), void (*exit)());
 
 // returns visitors hashmap from a visit_context
-struct hashmap * context_get_visitors(struct visit_context * context);
+struct visitor ** context_get_visitors(struct visit_context * context);
 
 // function to return a string from a bigger string from index start to end
 char * get_text(uint32_t start, uint32_t end, const char * source);

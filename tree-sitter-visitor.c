@@ -1,42 +1,28 @@
 #include <string.h>
 #include <stdio.h>
 #include <tree_sitter/api.h>
-#include "../hashmap.c/hashmap.h"
 
 struct visit_context {
   const char * source;
-  struct hashmap * visitors;
+  TSLanguage * language;
+  struct visitor ** visitors;
   int debug;
 };
 
 struct visitor {
-  const char * type;
+  char * flag;
   void * enter;
   void * exit;
 };
 
-int visitor_compare(const void *a, const void *b, void *data) {
-  const struct visitor *va = a;
-  const struct visitor *vb = b;
-  return strcmp(va->type, vb->type);
-}
-
-uint64_t visitor_hash(const void *item, uint64_t seed0, uint64_t seed1) {
-  const struct visitor *visitor = item;
-  return hashmap_murmur(visitor->type, strlen(visitor->type), seed0, seed1);
-}
-
-bool visitor_iter(const void *item, void *udata) {
-  const struct visitor *visitor = item;
-  printf("%s\n", visitor->type);
-  return true;
-}
-
-struct visit_context * context_new(const char * source, int debug) {
-  struct hashmap * visitors = hashmap_new(sizeof(struct visitor), 0, 0, 0, visitor_hash,
-      visitor_compare, NULL);
+struct visit_context * context_new(TSLanguage * language, const char * source, int debug) {
+  uint32_t visitor_count = ts_language_symbol_count(language);
+  struct visitor ** visitors = malloc(sizeof(struct visitor *) * visitor_count);
+  uint32_t i;
+  for(i = 0; i < visitor_count; i++ ) visitors[i] = NULL;
 
   struct visit_context * cont = malloc(sizeof (struct visit_context));
+  cont->language = language;
   cont->source = source;
   cont->visitors = visitors;
   cont->debug = debug;
@@ -45,22 +31,39 @@ struct visit_context * context_new(const char * source, int debug) {
 }
 
 void context_delete(struct visit_context * context) {
-  hashmap_free(context->visitors);
   free((char *)context->source);
   free(context);
 }
 
 // set both type 'enter' and 'exit' visit function
 bool context_set_type_visitor(struct visit_context * context, const char * type, void (*enter)(), void (*exit)()) {
-  struct visitor v = {.type=type, .enter=enter, .exit=exit};
-  return hashmap_set(context->visitors, &v);
+  TSFieldId i = ts_language_symbol_for_name(context->language, type, strlen(type), true);
+  if ( i == 0 ) {
+    i = ts_language_symbol_for_name(context->language, type, strlen(type), false);
+  }
+
+  struct visitor * v = malloc(sizeof(struct visitor));
+  v->enter = enter;
+  v->exit = exit;
+  v->flag = "one";
+  context->visitors[i] = v;
+  return true;
 }
 
 // set for each type in types both 'enter' and 'exit' visit function
 void context_set_types_visitor(struct visit_context * context, const char * types[], void (*enter)(), void (*exit)()) {
-  for (int i = 0; types[i] != NULL; i++) {
-    struct visitor v = {.type=(const char *)types[i], .enter=enter, .exit=exit};
-    hashmap_set(context->visitors, &v);
+  const char * type;
+  struct visitor * v = malloc(sizeof(struct visitor));
+  v->enter = enter;
+  v->exit = exit;
+  v->flag = "mult";
+
+  for (int i = 0; (type = types[i]) != NULL; i++) {
+    TSFieldId i = ts_language_symbol_for_name(context->language, type, strlen(type), true);
+    if ( i == 0 ) {
+      i = ts_language_symbol_for_name(context->language, type, strlen(type), false);
+    }
+    context->visitors[i] = v;
   }
 }
 
@@ -68,7 +71,7 @@ const char * context_get_source(struct visit_context * context) {
   return context->source;
 }
 
-struct hashmap * context_get_visitors(struct visit_context * context) {
+struct visitor ** context_get_visitors(struct visit_context * context) {
   return context->visitors;
 }
 
@@ -89,20 +92,10 @@ char * ts_node_text (TSNode node, struct visit_context * context) {
   return code;
 }
 
-void visit_tree (TSNode node, struct visit_context * context) {
-  if (context->debug) {
-    printf("Registered visitor types:\n");
-    hashmap_scan(context->visitors, visitor_iter, NULL);
-    printf("------\n");
-    _debug_tree(node, context);
-  } else {
-    _visit_tree(node, context);
-  }
-}
-
 void _debug_tree (TSNode node, struct visit_context * context) {
   const char * type = ts_node_type(node);
-  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
+  unsigned short sym = ts_node_symbol(node);
+  struct visitor * visitor = context->visitors[sym];
 
   void (*enter)() = NULL;
   void (*exit)() = NULL;
@@ -127,7 +120,6 @@ void _debug_tree (TSNode node, struct visit_context * context) {
   }
 
   char * text = ts_node_text(node, context);
-  TSSymbol sym = ts_node_symbol(node);
   printf("Id: %lu  %s  %s  %s  %hu\t%s\t", (uintptr_t) node.id, in, out, type, sym, text);
 
   if (enter != NULL) {
@@ -147,8 +139,8 @@ void _debug_tree (TSNode node, struct visit_context * context) {
 }
 // visit pre order
 void _visit_tree (TSNode node, struct visit_context * context) {
-  const char * type = ts_node_type(node);
-  struct visitor * visitor = hashmap_get(context->visitors, &(struct visitor){ .type=(const char *)type});
+  TSSymbol sym = ts_node_symbol(node);
+  struct visitor * visitor = context->visitors[sym];
 
   if (visitor != NULL) {
     void (*enter)() = NULL;
@@ -175,6 +167,16 @@ void _visit_tree (TSNode node, struct visit_context * context) {
       TSNode child_node = ts_node_child(node, i);
       _visit_tree(child_node, context);
     }
+  }
+}
+
+void visit_tree (TSNode node, struct visit_context * context) {
+  if (context->debug) {
+    printf("Registered visitor types:\n");
+    printf("------\n");
+    _debug_tree(node, context);
+  } else {
+    _visit_tree(node, context);
   }
 }
 
