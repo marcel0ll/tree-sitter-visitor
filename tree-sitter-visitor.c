@@ -23,7 +23,7 @@ int visitor_compare(const void *a, const void *b, void *data) {
 
 uint64_t visitor_hash(const void *item, uint64_t seed0, uint64_t seed1) {
   const struct visitor *visitor = item;
-  return hashmap_sip(visitor->type, strlen(visitor->type), seed0, seed1);
+  return hashmap_murmur(visitor->type, strlen(visitor->type), seed0, seed1);
 }
 
 bool visitor_iter(const void *item, void *udata) {
