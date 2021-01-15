@@ -1,14 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <tree_sitter/api.h>
-
-struct visit_context {
-  const char * source;
-  TSLanguage * language;
-  struct visitor ** visitors;
-  int debug;
-};
-
+#include "./tree-sitter-visitor.h"
 
 struct visitor {
   void * enter;
@@ -26,6 +19,7 @@ struct visit_context * context_new(TSLanguage * language, const char * source, i
   cont->source = source;
   cont->visitors = visitors;
   cont->debug = debug;
+  cont->cursor = NULL;
 
   return cont;
 }
@@ -90,6 +84,7 @@ char * ts_node_text (TSNode node, struct visit_context * context) {
 
 void visit_tree_cursor (TSNode tree, struct visit_context * context) {
   TSTreeCursor cursor = ts_tree_cursor_new(tree);
+  context->cursor = &cursor;
   TSNode node;
   struct visitor * visitor;
   void (*enter)() = NULL;
@@ -97,36 +92,46 @@ void visit_tree_cursor (TSNode tree, struct visit_context * context) {
   bool recurse = true;
 
   while (true) {
-    if (recurse && ts_tree_cursor_goto_first_child(&cursor)) {
+    if (recurse && ts_tree_cursor_goto_first_child(context->cursor)) {
       recurse = true;
-      node = ts_tree_cursor_current_node(&cursor);
+      node = ts_tree_cursor_current_node(context->cursor);
       visitor = context->visitors[ts_node_symbol(node)];
       if (visitor != NULL) {
         enter = visitor->enter;
-        if (enter != NULL) enter(node, context);
+        if (enter != NULL) {
+          enter(node, context);
+          /* ts_tree_cursor_reset(context->cursor, node); */
+        }
       }
     } else {
-      node = ts_tree_cursor_current_node(&cursor);
+      node = ts_tree_cursor_current_node(context->cursor);
       visitor = context->visitors[ts_node_symbol(node)];
       if (visitor != NULL) {
         exit = visitor->exit;
-        if (exit != NULL) exit(node, context);
+        if (exit != NULL) {
+          exit(node, context);
+          /* ts_tree_cursor_reset(context->cursor, node); */
+        }
       }
-      if (ts_tree_cursor_goto_next_sibling(&cursor)) {
+      if (ts_tree_cursor_goto_next_sibling(context->cursor)) {
         recurse = true;
-        node = ts_tree_cursor_current_node(&cursor);
+        node = ts_tree_cursor_current_node(context->cursor);
         visitor = context->visitors[ts_node_symbol(node)];
         if (visitor != NULL) {
           enter = visitor->enter;
-          if (enter != NULL) enter(node, context);
+          if (enter != NULL) {
+            enter(node, context);
+            /* ts_tree_cursor_reset(context->cursor, node); */
+          }
         }
-      } else if (ts_tree_cursor_goto_parent(&cursor)) {
+      } else if (ts_tree_cursor_goto_parent(context->cursor)) {
         recurse = false;
       } else {
         break;
       }
     }
   }
+  context->cursor = NULL;
   ts_tree_cursor_delete(&cursor);
 }
 
@@ -214,7 +219,7 @@ void visit_tree (TSNode node, struct visit_context * context) {
     printf("------\n");
     _debug_tree(node, context);
   } else {
-    _visit_tree(node, context);
+    visit_tree_cursor(node, context);
   }
 }
 

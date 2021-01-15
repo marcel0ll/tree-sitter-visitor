@@ -7,7 +7,13 @@
 #include <tree_sitter/api.h>
 
 // struct to hold the visiting context(.source, .visitors)
-struct visit_context;
+struct visit_context {
+  const char * source;
+  TSLanguage * language;
+  struct visitor ** visitors;
+  int debug;
+  TSTreeCursor * cursor;
+};
 
 // struct to hold a visitor(.type, .visit)
 struct visitor;
