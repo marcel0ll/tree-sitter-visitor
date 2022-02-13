@@ -32,7 +32,7 @@ bool context_set_type_visitor(struct visit_context * context, const char * type,
 // set for each type in types both 'enter' and 'exit' visit function
 void context_set_types_visitor(struct visit_context * context, const char * types[], void (*enter)(), void (*exit)());
 
-// returns visitors hashmap from a visit_context
+// returns visitors from a visit_context
 struct visitor ** context_get_visitors(struct visit_context * context);
 
 // function to return a string from a bigger string from index start to end

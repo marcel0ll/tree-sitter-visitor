@@ -2,12 +2,11 @@
 
 version: v0.0.3
 
-A hashmap implementation of the visitor pattern for tree-sitter.
+An visitor pattern implementation for tree-sitter.
 
 ## Dependencies
 
 [tree-sitter](https://github.com/tree-sitter/tree-sitter)
-[hashmap](https://github.com/tidwall/hashmap.c)
 
 ## Usage
 
@@ -55,8 +54,8 @@ bool context_set_types_enter(struct visit_context * context, const char * types[
 // set for each type in types 'exit' visit function
 bool context_set_types_exit(struct visit_context * context, const char * types[], void (*exit)());
 
-// returns visitors hashmap from a visit_context
-struct hashmap * context_get_visitors(struct visit_context * context);
+// returns visitors from a visit_context
+struct visitor * context_get_visitors(struct visit_context * context);
 
 // function to return a string from a bigger string from index start to end
 char * get_text(uint32_t start, uint32_t end, const char * source);
